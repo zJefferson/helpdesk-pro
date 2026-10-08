@@ -120,6 +120,10 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
+# Cookie do refresh token usado pelo frontend (ver apps/accounts/session_views.py).
+REFRESH_COOKIE_NAME = "helpdesk_refresh"
+REFRESH_COOKIE_SECURE = env.bool("REFRESH_COOKIE_SECURE", default=not DEBUG)
+
 # Documentação OpenAPI/Swagger (drf-spectacular).
 SPECTACULAR_SETTINGS = {
     "TITLE": "HelpDesk Pro API",
@@ -127,4 +131,6 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,  # separa schemas de entrada e saída (campos read-only)
+    # O mesmo conjunto de status aparece em vários lugares: um nome único no schema.
+    "ENUM_NAME_OVERRIDES": {"TicketStatusEnum": "apps.tickets.models.Status"},
 }

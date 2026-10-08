@@ -1,10 +1,23 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.accounts.models import Role, User
 from apps.accounts.serializers import UserSummarySerializer
 from apps.core.serializers import RejectReadOnlyFieldsMixin
 
+from . import services
 from .models import Category, Comment, Status, Ticket, TicketHistory
+
+
+class TicketPermissionsSerializer(serializers.Serializer):
+    """Ações que o usuário logado pode executar no chamado (só para a interface)."""
+
+    editable_fields = serializers.ListField(child=serializers.CharField())
+    status_transitions = serializers.ListField(child=serializers.ChoiceField(Status.choices))
+    can_assign = serializers.BooleanField()
+    can_take = serializers.BooleanField()
+    can_comment = serializers.BooleanField()
+    can_comment_internal = serializers.BooleanField()
 
 
 class TicketSerializer(RejectReadOnlyFieldsMixin, serializers.ModelSerializer):
@@ -17,6 +30,7 @@ class TicketSerializer(RejectReadOnlyFieldsMixin, serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     requester = UserSummarySerializer(read_only=True)
     assignee = UserSummarySerializer(read_only=True)
+    permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = Ticket
@@ -34,8 +48,17 @@ class TicketSerializer(RejectReadOnlyFieldsMixin, serializers.ModelSerializer):
             "updated_at",
             "resolved_at",
             "closed_at",
+            "permissions",
         ]
         read_only_fields = ["status", "created_at", "updated_at", "resolved_at", "closed_at"]
+
+    @extend_schema_field(TicketPermissionsSerializer)
+    def get_permissions(self, ticket):
+        # Só faz sentido para quem está logado; sem request (ex.: testes de unidade) fica vazio.
+        request = self.context.get("request")
+        if request is None:
+            return None
+        return services.available_actions(request.user, ticket)
 
     def validate_category(self, category):
         # RN05: só categorias ativas podem ser escolhidas.
@@ -86,3 +109,42 @@ class TicketHistorySerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
+
+
+class CategorySerializer(RejectReadOnlyFieldsMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ["id", "name", "description", "is_active"]
+
+
+# --- Dashboard (somente saída; usado para validar o formato e documentar no Swagger) ---
+
+
+class StatusCountSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=Status.choices)
+    label = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class PriorityCountSerializer(serializers.Serializer):
+    priority = serializers.IntegerField()
+    label = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class CategoryCountSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class DashboardSummarySerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+    open = serializers.IntegerField(help_text="Abertos, em atendimento ou aguardando.")
+    unassigned = serializers.IntegerField(help_text="Ativos sem técnico responsável.")
+    assigned_to_me = serializers.IntegerField(help_text="Ativos atribuídos ao usuário logado.")
+    resolved_last_30_days = serializers.IntegerField()
+    avg_resolution_hours = serializers.FloatField(allow_null=True)
+    by_status = StatusCountSerializer(many=True)
+    by_priority = PriorityCountSerializer(many=True)
+    open_by_category = CategoryCountSerializer(many=True)

@@ -74,7 +74,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         ticket = services.assign_ticket(
             ticket, actor=request.user, assignee=serializer.validated_data["assignee_id"]
         )
-        return Response(TicketSerializer(self._reload(ticket)).data)
+        return Response(self.get_serializer(self._reload(ticket)).data)
 
     @extend_schema(request=StatusChangeSerializer, responses=TicketSerializer)
     @action(detail=True, methods=["post"], url_path="status")
@@ -86,7 +86,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         ticket = services.change_status(
             ticket, actor=request.user, new_status=serializer.validated_data["status"]
         )
-        return Response(TicketSerializer(self._reload(ticket)).data)
+        return Response(self.get_serializer(self._reload(ticket)).data)
 
     @extend_schema(methods=["get"], responses=CommentSerializer(many=True))
     @extend_schema(methods=["post"], request=CommentSerializer, responses={201: CommentSerializer})

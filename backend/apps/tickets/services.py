@@ -187,3 +187,37 @@ def add_comment(ticket, *, author, body, is_internal=False):
     # Um comentário é "atividade" no chamado: atualiza a data para a ordenação por recentes.
     Ticket.objects.filter(pk=ticket.pk).update(updated_at=comment.created_at)
     return comment
+
+
+def available_actions(user, ticket):
+    """
+    O que `user` pode fazer em `ticket`, calculado com as MESMAS regras usadas na validação.
+
+    O frontend usa isto só para decidir quais botões mostrar. Toda ação continua sendo
+    validada de novo no backend quando é executada.
+    """
+    if ticket.status in FINAL_STATUSES:
+        return {
+            "editable_fields": [],
+            "status_transitions": [],
+            "can_assign": False,
+            "can_take": False,
+            "can_comment": False,
+            "can_comment_internal": False,
+        }
+
+    transitions = [
+        new
+        for (old, new), who in STATUS_TRANSITIONS.items()
+        if old == ticket.status
+        and _can_act_as(user, ticket, who)
+        and not (new == Status.IN_PROGRESS and old == Status.OPEN and not ticket.assignee_id)
+    ]
+    return {
+        "editable_fields": sorted(editable_fields(user, ticket)),
+        "status_transitions": transitions,
+        "can_assign": user.is_admin,
+        "can_take": user.is_technician and ticket.assignee_id is None,
+        "can_comment": True,
+        "can_comment_internal": not user.is_requester,
+    }
