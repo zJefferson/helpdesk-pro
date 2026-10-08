@@ -8,7 +8,8 @@ Quem pode ALTERAR um chamado, e quais campos (RN06 e RN11).
 | Solicitante dono, status = Aberto  | título, descrição, categoria                |
 | Qualquer um, chamado fechado/canc. | nenhum                                      |
 
-Status e responsável NÃO são editados por aqui: terão endpoints próprios em etapas futuras.
+Status e responsável NÃO são editados pelo PATCH: têm endpoints próprios
+(`/status/` e `/assign/`), com regras em `services.py`.
 """
 
 from rest_framework.permissions import SAFE_METHODS, BasePermission
@@ -42,8 +43,13 @@ class TicketPermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return True
+        # RN11: nenhuma escrita (edição, atribuição, status, comentário) em chamado encerrado.
         if obj.status in FINAL_STATUSES:
             self.message = "Chamados fechados ou cancelados não podem ser alterados."
             return False
-        self.message = "Você não tem permissão para alterar este chamado."
-        return bool(editable_fields(request.user, obj))
+        if view.action == "partial_update":
+            self.message = "Você não tem permissão para alterar este chamado."
+            return bool(editable_fields(request.user, obj))
+        # Demais ações (atribuir, mudar status, comentar): as regras detalhadas
+        # dependem dos dados enviados e são validadas em `services.py`.
+        return True

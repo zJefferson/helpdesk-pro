@@ -12,12 +12,15 @@ def test_project_uses_custom_user_model():
     assert get_user_model() is User
 
 
-def test_password_is_stored_as_hash_never_plain_text(requester):
-    requester.refresh_from_db()
+def test_password_is_stored_as_hash_never_plain_text(settings):
+    # Usa o hasher real do projeto (os demais testes usam um rápido, ver conftest.py).
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.PBKDF2PasswordHasher"]
+    user = User.objects.create_user(email="hash@example.com", password=TEST_PASSWORD)
+    user.refresh_from_db()
 
-    assert requester.password != TEST_PASSWORD
-    assert requester.password.startswith("pbkdf2_sha256$")
-    assert requester.check_password(TEST_PASSWORD)
+    assert user.password != TEST_PASSWORD
+    assert user.password.startswith("pbkdf2_sha256$")
+    assert user.check_password(TEST_PASSWORD)
 
 
 def test_new_user_is_requester_by_default():

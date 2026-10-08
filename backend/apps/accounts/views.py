@@ -1,19 +1,21 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from apps.core.permissions import IsAdmin
+from apps.core.permissions import IsAdmin, IsTechnicianOrAdmin
 
-from .models import User
+from .models import Role, User
 from .serializers import (
     ChangePasswordSerializer,
     LoginSerializer,
     LogoutSerializer,
     MeSerializer,
     UserSerializer,
+    UserSummarySerializer,
 )
 
 
@@ -68,3 +70,10 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     queryset = User.objects.order_by("first_name", "last_name", "id")
     http_method_names = ["get", "post", "patch", "head", "options"]
+
+    @extend_schema(responses=UserSummarySerializer(many=True))
+    @action(detail=False, permission_classes=[IsTechnicianOrAdmin], pagination_class=None)
+    def technicians(self, request):
+        """Técnicos ativos — usado para escolher o responsável de um chamado."""
+        technicians = self.get_queryset().filter(role=Role.TECHNICIAN, is_active=True)
+        return Response(UserSummarySerializer(technicians, many=True).data)

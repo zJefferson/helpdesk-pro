@@ -1,9 +1,10 @@
 from rest_framework import serializers
 
+from apps.accounts.models import Role, User
 from apps.accounts.serializers import UserSummarySerializer
 from apps.core.serializers import RejectReadOnlyFieldsMixin
 
-from .models import Category, Ticket
+from .models import Category, Status, Ticket
 
 
 class TicketSerializer(RejectReadOnlyFieldsMixin, serializers.ModelSerializer):
@@ -41,3 +42,18 @@ class TicketSerializer(RejectReadOnlyFieldsMixin, serializers.ModelSerializer):
         if not category.is_active:
             raise serializers.ValidationError("Esta categoria está inativa.")
         return category
+
+
+class AssignSerializer(serializers.Serializer):
+    """Entrada de POST /tickets/{id}/assign/. Só aceita técnicos ativos (RN08)."""
+
+    assignee_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role=Role.TECHNICIAN, is_active=True),
+        error_messages={"does_not_exist": "Informe o id de um técnico ativo."},
+    )
+
+
+class StatusChangeSerializer(serializers.Serializer):
+    """Entrada de POST /tickets/{id}/status/. A transição é validada em services.py."""
+
+    status = serializers.ChoiceField(choices=Status.choices)

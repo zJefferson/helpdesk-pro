@@ -14,3 +14,11 @@ class IsAdmin(BasePermission):
     def has_permission(self, request, view):
         user = request.user
         return bool(user and user.is_authenticated and user.is_admin)
+
+
+class IsTechnicianOrAdmin(BasePermission):
+    message = "Apenas técnicos ou administradores podem executar esta ação."
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated and (user.is_technician or user.is_admin))

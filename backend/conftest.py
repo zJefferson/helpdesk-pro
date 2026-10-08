@@ -22,6 +22,13 @@ def _clear_cache():
     cache.clear()
 
 
+@pytest.fixture(autouse=True)
+def _fast_password_hasher(settings):
+    # O PBKDF2 é lento DE PROPÓSITO (dificulta ataques). Nos testes isso só atrasa,
+    # então usamos um hasher rápido. O teste que verifica o PBKDF2 restaura o real.
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+
 @pytest.fixture
 def make_user(db):
     """Fábrica de usuários: make_user(role=Role.TECHNICIAN, email="x@y.com")."""
