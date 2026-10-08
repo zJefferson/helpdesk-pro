@@ -82,3 +82,13 @@ ruff check .
 ### Verificando
 
 Acesse http://localhost:8000/api/health/ — a resposta deve ser `{"status": "ok", "database": "ok"}`.
+
+### Acessando o Django Admin
+
+Crie seu próprio administrador (o login é pelo e-mail):
+
+```bash
+python manage.py createsuperuser
+```
+
+Depois acesse http://localhost:8000/admin/.

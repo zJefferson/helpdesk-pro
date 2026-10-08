@@ -524,10 +524,11 @@ Regras para cada etapa (vibe coding com segurança):
 - ✅ Aceite: `docker compose up` sobe tudo; `GET /api/health/` → 200 com `{"status": "ok", "database": "ok"}`.
 - 🧪 Testes: health retorna 200; pytest roda dentro do container.
 
-**Etapa 2 — Usuário customizado e perfis**
-- Model `User` (e-mail como login, `role`), `UserManager`, Django Admin, comando `seed_demo` (1 admin, 2 técnicos, 2 solicitantes, categorias).
-- ✅ Aceite: `createsuperuser` pede e-mail; superuser nasce com `role=ADMIN`; seed é idempotente (rodar 2x não duplica).
-- 🧪 Testes: senha salva com hash (`check_password` ok, campo ≠ texto puro); role padrão `REQUESTER`; e-mail único sem diferenciar maiúsculas; e-mail obrigatório.
+**Etapa 2 — Usuário customizado, modelos iniciais e Django Admin** ✅ concluída
+- Apps `accounts` e `tickets`; model `User` (e-mail como login, `role`) e `UserManager`; models `Category`, `Ticket`, `Comment` e `TicketHistory` (só estrutura, sem regras de negócio); migrations iniciais; Django Admin (histórico somente leitura).
+- ✅ Aceite: `createsuperuser` pede e-mail; superuser nasce com `role=ADMIN`; não existe tabela `auth_user`; `makemigrations --check` sem pendências; páginas do admin carregam.
+- 🧪 Testes: senha salva com hash (`check_password` ok, campo ≠ texto puro); role padrão `REQUESTER`; e-mail único sem diferenciar maiúsculas; e-mail obrigatório; defaults do chamado; ordenação por prioridade; `PROTECT` em categoria/usuário; banco é PostgreSQL.
+- Obs.: o comando `seed_demo` (dados de demonstração) foi adiado para a Etapa 11, quando o domínio estiver completo.
 
 **Etapa 3 — Autenticação JWT + Swagger**
 - SimpleJWT (login, refresh, logout com blacklist), `/auth/me/`, troca de senha, throttling no login, drf-spectacular em `/api/docs/`.
@@ -542,12 +543,12 @@ Regras para cada etapa (vibe coding com segurança):
 ### Fase B — Núcleo do domínio (backend)
 
 **Etapa 5 — Categorias**
-- Model, serializer, viewset, admin.
+- Serializer e viewset (model e admin já criados na Etapa 2).
 - ✅ Aceite: CRUD sem DELETE funcionando para admin.
 - 🧪 Testes: só admin cria/edita (S/T → 403); S/T não veem inativas; nome duplicado → 400.
 
 **Etapa 6 — Chamados: criar, listar, detalhar**
-- Models `Ticket` e `TicketHistory`; `selectors.visible_tickets`; `services.create_ticket` (grava histórico `CREATED`); factories.
+- `selectors.visible_tickets` (models já criados na Etapa 2); `services.create_ticket` (grava histórico `CREATED`); factories.
 - ✅ Aceite: cada perfil lista apenas o que pode ver.
 - 🧪 Testes: S vê só os seus; S acessando chamado alheio → **404**; `requester` enviado no corpo é ignorado; status inicial `OPEN` e sem responsável; categoria inativa → 400; validação de tamanho de título/descrição; T e A veem todos; criação gera 1 registro de histórico.
 
@@ -562,7 +563,7 @@ Regras para cada etapa (vibe coding com segurança):
 - 🧪 Testes (use `pytest.mark.parametrize` para cobrir a tabela inteira): T assume chamado sem responsável → ok; T reatribui chamado de outro → 403; T atribui a outro técnico → 403; A atribui a solicitante → 400; A atribui a técnico inativo → 400; OPEN→IN_PROGRESS sem responsável → 400; S cancela o próprio OPEN → ok; S resolve → 403; `resolved_at`/`closed_at` corretos; CLOSED/CANCELLED não aceitam nada (RN11); cada mudança gera histórico.
 
 **Etapa 9 — Comentários**
-- Model `Comment`, `services.add_comment`, endpoints aninhados.
+- `services.add_comment` e endpoints aninhados (model já criado na Etapa 2).
 - ✅ Aceite: conversa no chamado funcionando com notas internas.
 - 🧪 Testes: S comenta no próprio → 201; S comenta em alheio → 404; S envia `is_internal=true` → 403 (ou 400); S não vê notas internas na listagem; T/A veem todas; comentar em CLOSED → 400; corpo vazio → 400.
 
@@ -573,6 +574,7 @@ Regras para cada etapa (vibe coding com segurança):
 
 **Etapa 11 — Dashboard**
 - `selectors.dashboard_summary(user)` com agregações (`Count`, `Avg`).
+- Comando `seed_demo` (1 admin, 2 técnicos, 2 solicitantes, categorias e alguns chamados), idempotente e executado só manualmente — dados de demonstração, nunca em produção.
 - ✅ Aceite: um endpoint retorna todos os indicadores do RF20.
 - 🧪 Testes: contagens corretas com dados conhecidos; S só conta os próprios (RN23); tempo médio ignora não resolvidos; banco vazio não quebra (retorna zeros/`null`).
 

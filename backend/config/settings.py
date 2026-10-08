@@ -35,7 +35,12 @@ INSTALLED_APPS = [
     "rest_framework",
     # Apps do projeto
     "apps.core",
+    "apps.accounts",
+    "apps.tickets",
 ]
+
+# Usuário customizado (login por e-mail + perfil). Precisa existir ANTES da primeira migration.
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
