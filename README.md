@@ -32,4 +32,53 @@ Sistema de gestão de chamados de suporte técnico de TI, desenvolvido como proj
 
 ## Como rodar
 
-_Instruções serão adicionadas a partir da Etapa 1 (backend + PostgreSQL no Docker)._
+Primeiro, copie o arquivo de variáveis de ambiente e ajuste se necessário:
+
+```bash
+cp .env.example .env
+```
+
+### Opção 1 — Docker (recomendado)
+
+Requer [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+```bash
+docker compose up --build
+```
+
+Rodar os testes dentro do container:
+
+```bash
+docker compose exec backend pytest
+```
+
+### Opção 2 — Sem Docker
+
+Requer Python 3.14 e PostgreSQL 16 instalados, com um usuário e banco `helpdesk`
+(senha `helpdesk`, com permissão `CREATEDB` para os testes):
+
+```sql
+CREATE ROLE helpdesk WITH LOGIN PASSWORD 'helpdesk' CREATEDB;
+CREATE DATABASE helpdesk OWNER helpdesk;
+```
+
+Depois, dentro de `backend/`:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate        # Linux/macOS: source .venv/bin/activate
+pip install -r requirements-dev.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+Testes e lint:
+
+```bash
+pytest --cov
+ruff check .
+```
+
+### Verificando
+
+Acesse http://localhost:8000/api/health/ — a resposta deve ser `{"status": "ok", "database": "ok"}`.
