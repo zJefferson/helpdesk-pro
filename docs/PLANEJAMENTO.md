@@ -84,7 +84,7 @@ Três perfis usam o sistema:
 - **RNF01** — Senhas armazenadas apenas como hash (hasher padrão do Django, PBKDF2) e validadas pelos `AUTH_PASSWORD_VALIDATORS` (mínimo 8 caracteres, não comum, não só numérica, não parecida com os dados do usuário).
 - **RNF02** — **Toda** permissão é validada no backend. O frontend apenas esconde botões por conveniência.
 - **RNF03** — Access token de curta duração (15 min), refresh token de 1 dia, com rotação e *blacklist* no logout.
-- **RNF04** — Limite de tentativas no login (throttling do DRF, ex.: 5/min por IP).
+- **RNF04** — Limite de tentativas no login (throttling do DRF, padrão 10/min por IP, configurável em `LOGIN_THROTTLE_RATE`).
 - **RNF05** — Segredos (SECRET_KEY, senha do banco) apenas em variáveis de ambiente; `.env` fora do Git, `.env.example` versionado.
 - **RNF06** — Em produção: `DEBUG=False`, `ALLOWED_HOSTS` e `CORS_ALLOWED_ORIGINS` restritos, HTTPS, cookies seguros.
 - **RNF07** — Validação de entrada em todos os serializers; ORM do Django (sem SQL manual) previne SQL injection; React escapa HTML por padrão (proibido `dangerouslySetInnerHTML`).
@@ -122,7 +122,7 @@ Três perfis usam o sistema:
 
 ### 2.2 Abertura e edição
 
-- **RN03** — Qualquer perfil pode abrir chamado. O `requester` é **sempre** o usuário logado; o valor enviado no corpo da requisição é ignorado.
+- **RN03** — Qualquer perfil pode abrir chamado. O `requester` é **sempre** o usuário logado; enviar `requester` (ou qualquer outro campo controlado pelo backend) no corpo da requisição é recusado com 400.
 - **RN04** — Chamado novo nasce com status **Aberto** e sem responsável.
 - **RN05** — Só categorias **ativas** podem ser escolhidas ao criar ou editar.
 - **RN06** — Campos editáveis por perfil:
@@ -530,13 +530,13 @@ Regras para cada etapa (vibe coding com segurança):
 - 🧪 Testes: senha salva com hash (`check_password` ok, campo ≠ texto puro); role padrão `REQUESTER`; e-mail único sem diferenciar maiúsculas; e-mail obrigatório; defaults do chamado; ordenação por prioridade; `PROTECT` em categoria/usuário; banco é PostgreSQL.
 - Obs.: o comando `seed_demo` (dados de demonstração) foi adiado para a Etapa 11, quando o domínio estiver completo.
 
-**Etapa 3 — Autenticação JWT + Swagger**
+**Etapa 3 — Autenticação JWT + Swagger** ✅ concluída
 - SimpleJWT (login, refresh, logout com blacklist), `/auth/me/`, troca de senha, throttling no login, drf-spectacular em `/api/docs/`.
 - ✅ Aceite: é possível fazer login e chamar `/me` pelo Swagger (botão *Authorize*).
 - 🧪 Testes: login correto → 200 com tokens; senha errada → 401; usuário inativo → 401; `/me` sem token → 401; `/me` não contém `password`; refresh após logout → 401; troca de senha exige senha atual e valida força.
 
-**Etapa 4 — Gestão de usuários (admin)**
-- Permissões em `core/permissions.py`; `UserViewSet` (sem DELETE); `/users/technicians/`.
+**Etapa 4 — Gestão de usuários (admin)** ✅ concluída (exceto `/users/technicians/`, adiado para a Etapa 8)
+- Permissões em `core/permissions.py`; `UserViewSet` (sem DELETE).
 - ✅ Aceite: admin gerencia usuários pela API; demais perfis recebem 403.
 - 🧪 Testes: S e T → 403 em `/users/`; admin cria usuário e a senha fica com hash; senha fraca → 400; admin não desativa a si mesmo nem remove o próprio role (RN21); `/technicians/` só traz técnicos ativos; S → 403 em `/technicians/`.
 
@@ -547,15 +547,15 @@ Regras para cada etapa (vibe coding com segurança):
 - ✅ Aceite: CRUD sem DELETE funcionando para admin.
 - 🧪 Testes: só admin cria/edita (S/T → 403); S/T não veem inativas; nome duplicado → 400.
 
-**Etapa 6 — Chamados: criar, listar, detalhar**
+**Etapa 6 — Chamados: criar, listar, detalhar** ✅ concluída junto com a Etapa 3 (permissões de chamados)
 - `selectors.visible_tickets` (models já criados na Etapa 2); `services.create_ticket` (grava histórico `CREATED`); factories.
 - ✅ Aceite: cada perfil lista apenas o que pode ver.
-- 🧪 Testes: S vê só os seus; S acessando chamado alheio → **404**; `requester` enviado no corpo é ignorado; status inicial `OPEN` e sem responsável; categoria inativa → 400; validação de tamanho de título/descrição; T e A veem todos; criação gera 1 registro de histórico.
+- 🧪 Testes: S vê só os seus; S acessando chamado alheio → **404**; `requester` enviado no corpo → 400; status inicial `OPEN` e sem responsável; categoria inativa → 400; validação de tamanho de título/descrição; T e A veem todos; criação gera 1 registro de histórico.
 
-**Etapa 7 — Edição com permissão por campo + histórico**
+**Etapa 7 — Edição com permissão por campo + histórico** ✅ concluída junto com a Etapa 3
 - `services.update_ticket` aplicando RN06 e gravando um histórico por campo alterado.
 - ✅ Aceite: PATCH respeita a tabela RN06.
-- 🧪 Testes: S edita título com status OPEN → ok; S edita com IN_PROGRESS → 400/403; S altera prioridade após criação → 403; T não responsável → 403; A edita tudo; enviar o mesmo valor não gera histórico; histórico guarda valores antigo/novo e o `actor`.
+- 🧪 Testes: S edita título com status OPEN → ok; S edita com IN_PROGRESS → 403; S altera prioridade após criação → 403; T não responsável → 403; A edita tudo; enviar o mesmo valor não gera histórico; histórico guarda valores antigo/novo e o `actor`.
 
 **Etapa 8 — Atribuição e transições de status**
 - `services.assign_ticket` (com `select_for_update`) e `services.change_status` com a tabela RN09 como dicionário no código.

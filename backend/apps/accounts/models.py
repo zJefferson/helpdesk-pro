@@ -23,6 +23,10 @@ class UserManager(BaseUserManager):
 
     use_in_migrations = True
 
+    def get_by_natural_key(self, username):
+        # Usado pelo login: "Ana@Example.com" encontra o usuário "ana@example.com".
+        return self.get(**{f"{self.model.USERNAME_FIELD}__iexact": normalize_email(username)})
+
     def _create_user(self, email, password, **extra_fields):
         if not email:
             raise ValueError("O e-mail é obrigatório.")

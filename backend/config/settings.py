@@ -5,6 +5,7 @@ Todos os valores sensíveis ou que mudam entre ambientes (dev, teste, produção
 vêm de variáveis de ambiente. Veja o arquivo `.env.example` na raiz do projeto.
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -33,6 +34,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Terceiros
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",  # guarda refresh tokens invalidados (logout)
+    "drf_spectacular",
     # Apps do projeto
     "apps.core",
     "apps.accounts",
@@ -93,7 +96,34 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Django REST Framework: "seguro por padrão" — todo endpoint exige login,
-# a menos que a view libere explicitamente (como o health check).
+# a menos que a view libere explicitamente (como o health check e o login).
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPagination",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "apps.core.exceptions.exception_handler",
+    # Limite de tentativas de login por IP: só aplicado nas views que declaram `throttle_scope`.
+    "DEFAULT_THROTTLE_RATES": {"login": env("LOGIN_THROTTLE_RATE", default="10/min")},
+}
+
+# JWT: access curto (vai em toda requisição) e refresh mais longo (só renova o access).
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,  # cada renovação gera um refresh novo...
+    "BLACKLIST_AFTER_ROTATION": True,  # ...e invalida o antigo
+    "UPDATE_LAST_LOGIN": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+# Documentação OpenAPI/Swagger (drf-spectacular).
+SPECTACULAR_SETTINGS = {
+    "TITLE": "HelpDesk Pro API",
+    "DESCRIPTION": "API de gestão de chamados de suporte técnico de TI.",
+    "VERSION": "0.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,  # separa schemas de entrada e saída (campos read-only)
 }

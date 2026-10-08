@@ -29,6 +29,8 @@ Sistema de gestão de chamados de suporte técnico de TI, desenvolvido como proj
 ## Documentação
 
 - [Planejamento completo](docs/PLANEJAMENTO.md): requisitos, regras de negócio, modelo de dados, arquitetura, endpoints e plano de implementação.
+- [Autenticação e permissões](docs/AUTENTICACAO.md): estratégia JWT, matriz de permissões, como criar o primeiro admin e usuários de teste, exemplos de requisições.
+- Swagger (com o servidor rodando): http://localhost:8000/api/docs/
 
 ## Como rodar
 
@@ -85,7 +87,8 @@ Acesse http://localhost:8000/api/health/ — a resposta deve ser `{"status": "ok
 
 ### Acessando o Django Admin
 
-Crie seu próprio administrador (o login é pelo e-mail):
+Crie seu próprio administrador (o login é pelo e-mail). Para cadastrar usuários de teste,
+veja [docs/AUTENTICACAO.md](docs/AUTENTICACAO.md#cadastrando-usuários-de-teste).
 
 ```bash
 python manage.py createsuperuser
