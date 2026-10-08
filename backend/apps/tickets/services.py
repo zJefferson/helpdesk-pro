@@ -9,7 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from .models import HistoryAction, Priority, Status, Ticket, TicketHistory
+from .models import Comment, HistoryAction, Priority, Status, Ticket, TicketHistory
 from .permissions import FINAL_STATUSES, editable_fields
 
 # Quem pode executar cada transição de status (RN09). Administrador pode todas.
@@ -170,3 +170,20 @@ def assign_ticket(ticket, *, actor, assignee):
         new_value=assignee.get_full_name(),
     )
     return ticket
+
+
+@transaction.atomic
+def add_comment(ticket, *, author, body, is_internal=False):
+    """
+    RN12: quem enxerga o chamado pode comentar (a visibilidade já foi checada na view).
+    RN13: só técnico/admin criam notas internas.
+    """
+    if is_internal and author.is_requester:
+        raise PermissionDenied("Solicitantes não podem criar notas internas.")
+
+    comment = Comment.objects.create(
+        ticket=ticket, author=author, body=body, is_internal=is_internal
+    )
+    # Um comentário é "atividade" no chamado: atualiza a data para a ordenação por recentes.
+    Ticket.objects.filter(pk=ticket.pk).update(updated_at=comment.created_at)
+    return comment
