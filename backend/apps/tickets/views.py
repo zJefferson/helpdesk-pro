@@ -1,12 +1,15 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.filters import StableOrderingFilter
 from apps.core.permissions import IsTechnicianOrAdmin
 
 from . import selectors, services
+from .filters import TicketFilter, TicketSearchFilter
 from .models import Ticket
 from .permissions import TicketPermission
 from .serializers import (
@@ -31,6 +34,13 @@ class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.none()  # só para a documentação; o real vem de get_queryset()
     permission_classes = [IsAuthenticated, TicketPermission]
     http_method_names = ["get", "post", "patch", "head", "options"]
+
+    # Filtros, busca e ordenação da listagem (?status=..., ?search=..., ?ordering=...).
+    filter_backends = [DjangoFilterBackend, TicketSearchFilter, StableOrderingFilter]
+    filterset_class = TicketFilter
+    search_fields = ["title", "description"]
+    ordering_fields = ["created_at", "updated_at", "priority", "status", "id"]
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         return selectors.visible_tickets(self.request.user)

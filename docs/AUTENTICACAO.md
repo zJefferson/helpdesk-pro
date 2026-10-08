@@ -29,6 +29,16 @@
 | GET/PATCH | `/api/v1/users/{id}/` | admin | Detalhe/edição (sem DELETE: desative com `is_active=false`) |
 | GET/POST | `/api/v1/tickets/` | logado | Lista os chamados visíveis / abre chamado |
 | GET/PATCH | `/api/v1/tickets/{id}/` | logado | Detalhe / edição conforme permissões |
+| POST | `/api/v1/tickets/{id}/assign/` | técnico, admin | `{"assignee_id": 3}` |
+| POST | `/api/v1/tickets/{id}/status/` | logado | `{"status": "RESOLVED"}` — valida a transição |
+| GET/POST | `/api/v1/tickets/{id}/comments/` | logado | `{"body": "...", "is_internal": false}` |
+| GET | `/api/v1/tickets/{id}/history/` | logado | Histórico de alterações |
+| GET | `/api/v1/users/technicians/` | técnico, admin | Técnicos ativos |
+
+Parâmetros de `GET /api/v1/tickets/`: `status` e `priority` (aceitam vários), `category`, `requester`,
+`assignee`, `unassigned=true`, `created_after`/`created_before` (AAAA-MM-DD), `search` (título,
+descrição ou número), `ordering` (`created_at`, `updated_at`, `priority`, `status`, `id`; prefixo `-`
+para decrescente), `page` e `page_size` (máx. 100).
 
 Documentação interativa: http://localhost:8000/api/docs/ (clique em **Authorize** e cole o `access`).
 
@@ -41,7 +51,13 @@ Documentação interativa: http://localhost:8000/api/docs/ (clique em **Authoriz
 | Editar título/descrição/categoria | próprio, só com status Aberto | se for o responsável | ✅ |
 | Editar prioridade | ❌ (só na criação) | se for o responsável | ✅ |
 | Editar status/responsável/solicitante via PATCH | ❌ (400) | ❌ (400) | ❌ (400) |
-| Editar chamado Fechado/Cancelado | ❌ (403) | ❌ (403) | ❌ (403) |
+| Atribuir técnico (`/assign/`) | ❌ (403) | só assumir para si, se sem responsável | ✅ qualquer técnico ativo |
+| Iniciar / aguardar / resolver (`/status/`) | ❌ (403) | se for o responsável | ✅ |
+| Cancelar (se Aberto) / fechar ou reabrir (se Resolvido) | próprio chamado | ❌ (403) | ✅ |
+| Comentar | próprio chamado | ✅ (inclusive nota interna) | ✅ (inclusive nota interna) |
+| Ver notas internas | ❌ (ocultas) | ✅ | ✅ |
+| Ver histórico | próprio chamado | ✅ | ✅ |
+| Qualquer escrita em chamado Fechado/Cancelado | ❌ (403) | ❌ (403) | ❌ (403) |
 | Alterar o próprio perfil (`role`) | ❌ (400) | ❌ (400) | ❌ não pode se rebaixar |
 | Gerenciar usuários | ❌ (403) | ❌ (403) | ✅ (não pode se desativar) |
 

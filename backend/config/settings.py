@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",  # guarda refresh tokens invalidados (logout)
     "drf_spectacular",
+    "django_filters",
     # Apps do projeto
     "apps.core",
     "apps.accounts",

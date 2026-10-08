@@ -172,7 +172,7 @@ stateDiagram-v2
 ```
 
 - **RN10** — `resolved_at` é preenchido ao ir para RESOLVED e limpo ao reabrir. `closed_at` é preenchido ao ir para CLOSED ou CANCELLED.
-- **RN11** — Chamados **CLOSED** e **CANCELLED** são somente leitura: sem edição, atribuição ou novos comentários.
+- **RN11** — Chamados **CLOSED** e **CANCELLED** são somente leitura: sem edição, atribuição, mudança de status ou novos comentários (a API responde 403).
 
 ### 2.5 Comentários
 
@@ -535,7 +535,7 @@ Regras para cada etapa (vibe coding com segurança):
 - ✅ Aceite: é possível fazer login e chamar `/me` pelo Swagger (botão *Authorize*).
 - 🧪 Testes: login correto → 200 com tokens; senha errada → 401; usuário inativo → 401; `/me` sem token → 401; `/me` não contém `password`; refresh após logout → 401; troca de senha exige senha atual e valida força.
 
-**Etapa 4 — Gestão de usuários (admin)** ✅ concluída (exceto `/users/technicians/`, adiado para a Etapa 8)
+**Etapa 4 — Gestão de usuários (admin)** ✅ concluída (`/users/technicians/` entregue na Etapa 8)
 - Permissões em `core/permissions.py`; `UserViewSet` (sem DELETE).
 - ✅ Aceite: admin gerencia usuários pela API; demais perfis recebem 403.
 - 🧪 Testes: S e T → 403 em `/users/`; admin cria usuário e a senha fica com hash; senha fraca → 400; admin não desativa a si mesmo nem remove o próprio role (RN21); `/technicians/` só traz técnicos ativos; S → 403 em `/technicians/`.
@@ -557,17 +557,17 @@ Regras para cada etapa (vibe coding com segurança):
 - ✅ Aceite: PATCH respeita a tabela RN06.
 - 🧪 Testes: S edita título com status OPEN → ok; S edita com IN_PROGRESS → 403; S altera prioridade após criação → 403; T não responsável → 403; A edita tudo; enviar o mesmo valor não gera histórico; histórico guarda valores antigo/novo e o `actor`.
 
-**Etapa 8 — Atribuição e transições de status**
+**Etapa 8 — Atribuição e transições de status** ✅ concluída
 - `services.assign_ticket` (com `select_for_update`) e `services.change_status` com a tabela RN09 como dicionário no código.
 - ✅ Aceite: todas as transições da tabela funcionam e todas as outras são recusadas.
 - 🧪 Testes (use `pytest.mark.parametrize` para cobrir a tabela inteira): T assume chamado sem responsável → ok; T reatribui chamado de outro → 403; T atribui a outro técnico → 403; A atribui a solicitante → 400; A atribui a técnico inativo → 400; OPEN→IN_PROGRESS sem responsável → 400; S cancela o próprio OPEN → ok; S resolve → 403; `resolved_at`/`closed_at` corretos; CLOSED/CANCELLED não aceitam nada (RN11); cada mudança gera histórico.
 
-**Etapa 9 — Comentários**
+**Etapa 9 — Comentários** ✅ concluída (junto com o endpoint de histórico)
 - `services.add_comment` e endpoints aninhados (model já criado na Etapa 2).
 - ✅ Aceite: conversa no chamado funcionando com notas internas.
 - 🧪 Testes: S comenta no próprio → 201; S comenta em alheio → 404; S envia `is_internal=true` → 403 (ou 400); S não vê notas internas na listagem; T/A veem todas; comentar em CLOSED → 400; corpo vazio → 400.
 
-**Etapa 10 — Busca, filtros, ordenação, paginação**
+**Etapa 10 — Busca, filtros, ordenação, paginação** ✅ concluída
 - `filters.py` com django-filter; SearchFilter; OrderingFilter; paginação global.
 - ✅ Aceite: combinações de filtros funcionam juntas e **continuam respeitando a visibilidade**.
 - 🧪 Testes: cada filtro isolado; `unassigned=true`; busca por texto e por número; ordenação por prioridade (Crítica primeiro com `-priority`); `page_size` > 100 é limitado; S filtrando por `requester` de outro usuário → lista vazia.
