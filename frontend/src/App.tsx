@@ -4,6 +4,7 @@ import { AppLayout } from "./components/AppLayout";
 import { EmptyState } from "./components/ui";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { TicketListPage } from "./pages/TicketListPage";
 
 function NotFoundPage() {
   return (
@@ -26,6 +27,7 @@ export function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="tickets" element={<TicketListPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>
