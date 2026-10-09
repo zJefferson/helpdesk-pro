@@ -542,7 +542,7 @@ Regras para cada etapa (vibe coding com segurança):
 
 ### Fase B — Núcleo do domínio (backend)
 
-**Etapa 5 — Categorias**
+**Etapa 5 — Categorias** ✅ concluída
 - Serializer e viewset (model e admin já criados na Etapa 2).
 - ✅ Aceite: CRUD sem DELETE funcionando para admin.
 - 🧪 Testes: só admin cria/edita (S/T → 403); S/T não veem inativas; nome duplicado → 400.
@@ -572,7 +572,7 @@ Regras para cada etapa (vibe coding com segurança):
 - ✅ Aceite: combinações de filtros funcionam juntas e **continuam respeitando a visibilidade**.
 - 🧪 Testes: cada filtro isolado; `unassigned=true`; busca por texto e por número; ordenação por prioridade (Crítica primeiro com `-priority`); `page_size` > 100 é limitado; S filtrando por `requester` de outro usuário → lista vazia.
 
-**Etapa 11 — Dashboard**
+**Etapa 11 — Dashboard** ✅ endpoint concluído (`seed_demo` ainda pendente)
 - `selectors.dashboard_summary(user)` com agregações (`Count`, `Avg`).
 - Comando `seed_demo` (1 admin, 2 técnicos, 2 solicitantes, categorias e alguns chamados), idempotente e executado só manualmente — dados de demonstração, nunca em produção.
 - ✅ Aceite: um endpoint retorna todos os indicadores do RF20.
@@ -582,32 +582,32 @@ Regras para cada etapa (vibe coding com segurança):
 
 ### Fase C — Frontend
 
-**Etapa 12 — Esqueleto do frontend**
+**Etapa 12 — Esqueleto do frontend** ✅ concluída
 - Vite + React + TS + Tailwind + React Router + TanStack Query + Vitest + RTL + MSW; serviço `frontend` no Compose; layout base (menu lateral, cabeçalho).
 - ✅ Aceite: `docker compose up` abre o front em `http://localhost:5173`; `npm test` e `npm run build` passam.
 - 🧪 Testes: App renderiza; rota inexistente mostra página 404.
 
-**Etapa 13 — Login e sessão**
+**Etapa 13 — Login e sessão** ✅ concluída (refresh em cookie HttpOnly, ver README)
 - Página de login, AuthContext, cliente axios com interceptor de refresh, `ProtectedRoute`, logout, tipos da API.
 - ✅ Aceite: login leva ao dashboard; recarregar a página mantém a sessão; logout volta ao login.
 - 🧪 Testes (MSW): credenciais erradas exibem mensagem; rota protegida sem login redireciona; 401 dispara refresh e repete a requisição; falha no refresh faz logout.
 
-**Etapa 14 — Lista de chamados**
+**Etapa 14 — Lista de chamados** ✅ concluída
 - Tabela com badges de status/prioridade, busca, filtros, ordenação e paginação **guardados na URL** (dá para compartilhar o link de uma busca).
 - ✅ Aceite: tudo que a API suporta na Etapa 10 é acessível pela tela; estados de carregando, vazio e erro.
 - 🧪 Testes: mudar filtro altera a query enviada; paginação navega; lista vazia mostra mensagem.
 
-**Etapa 15 — Abrir e editar chamado**
+**Etapa 15 — Abrir e editar chamado** ✅ concluída
 - Formulário com react-hook-form + zod (mesmas regras de tamanho do backend); exibe erros vindos da API.
 - ✅ Aceite: solicitante abre chamado e é redirecionado ao detalhe.
 - 🧪 Testes: validação no cliente; erro 400 da API aparece no campo certo; só categorias ativas no select.
 
-**Etapa 16 — Detalhe do chamado**
+**Etapa 16 — Detalhe do chamado** ✅ concluída
 - Dados, botões de ação conforme perfil/status (espelhando RN09), atribuição, comentários (com nota interna para T/A) e linha do tempo do histórico.
 - ✅ Aceite: o fluxo completo (abrir → assumir → resolver → fechar) pode ser feito pela interface com os usuários do seed.
 - 🧪 Testes: S não vê botão "Resolver" nem checkbox "nota interna"; T vê "Assumir" só se não houver responsável; ação bem-sucedida atualiza a tela.
 
-**Etapa 17 — Dashboard**
+**Etapa 17 — Dashboard** ✅ concluída
 - Cards de indicadores e barras simples com Tailwind.
 - ✅ Aceite: números batem com o endpoint; layout responsivo.
 - 🧪 Testes: renderiza valores do mock; estado vazio.
@@ -634,4 +634,4 @@ Regras para cada etapa (vibe coding com segurança):
 
 ## 7. Fora do escopo do MVP (para depois)
 
-Anexos, notificações por e-mail, SLA com prazos, autoatendimento/base de conhecimento, cadastro público, edição de comentários, refresh token em cookie HttpOnly, testes E2E (Playwright), relatórios exportáveis, multi-idioma.
+Anexos, notificações por e-mail, SLA com prazos, autoatendimento/base de conhecimento, cadastro público, edição de comentários, testes E2E (Playwright), relatórios exportáveis, multi-idioma.

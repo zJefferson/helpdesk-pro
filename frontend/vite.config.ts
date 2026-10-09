@@ -9,8 +9,9 @@ export default defineConfig({
     port: 5173,
     // Em desenvolvimento, o Vite repassa /api para o Django. Para o navegador, frontend e
     // API ficam na MESMA origem: não é preciso CORS e o cookie SameSite=Strict funciona.
+    // No Docker, o backend é acessado pelo nome do serviço (ver docker-compose.yml).
     proxy: {
-      "/api": "http://localhost:8000",
+      "/api": process.env.API_PROXY_TARGET ?? "http://localhost:8000",
     },
   },
   test: {

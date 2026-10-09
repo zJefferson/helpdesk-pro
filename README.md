@@ -2,7 +2,7 @@
 
 Sistema de gestão de chamados de suporte técnico de TI, desenvolvido como projeto de portfólio full stack.
 
-> 🚧 **Em desenvolvimento.** O planejamento está concluído e a implementação segue as etapas descritas em [docs/PLANEJAMENTO.md](docs/PLANEJAMENTO.md).
+> 🚧 **Em desenvolvimento.** Backend e frontend do MVP implementados; CI e deploy em andamento. Etapas em [docs/PLANEJAMENTO.md](docs/PLANEJAMENTO.md).
 
 ## Funcionalidades (MVP)
 
@@ -23,7 +23,7 @@ Sistema de gestão de chamados de suporte técnico de TI, desenvolvido como proj
 | Backend | Python, Django, Django REST Framework, SimpleJWT, drf-spectacular |
 | Banco de dados | PostgreSQL |
 | Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query |
-| Testes | pytest, pytest-django, factory_boy, Vitest, React Testing Library, MSW |
+| Testes | pytest, pytest-django, Vitest, React Testing Library, MSW |
 | Ambiente | Docker, Docker Compose, GitHub Actions |
 
 ## Documentação
@@ -40,7 +40,7 @@ Primeiro, copie o arquivo de variáveis de ambiente e ajuste se necessário:
 cp .env.example .env
 ```
 
-### Opção 1 — Docker (recomendado)
+### Opção 1 — Docker
 
 Requer [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
@@ -48,13 +48,22 @@ Requer [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 docker compose up --build
 ```
 
-Rodar os testes dentro do container:
+Sobe o PostgreSQL, o backend (http://localhost:8000) e o frontend (http://localhost:5173).
+Rodar os testes dentro dos containers:
 
 ```bash
 docker compose exec backend pytest
 ```
 
+```bash
+docker compose exec frontend npm test
+```
+
 ### Opção 2 — Sem Docker
+
+São dois terminais: um para o backend e outro para o frontend.
+
+#### Backend (terminal 1)
 
 Requer Python 3.14 e PostgreSQL 16 instalados, com um usuário e banco `helpdesk`
 (senha `helpdesk`, com permissão `CREATEDB` para os testes):
@@ -81,9 +90,36 @@ pytest --cov
 ruff check .
 ```
 
-### Verificando
-
 Acesse http://localhost:8000/api/health/ — a resposta deve ser `{"status": "ok", "database": "ok"}`.
+
+#### Frontend (terminal 2)
+
+Requer Node.js 24. Dentro de `frontend/`:
+
+```bash
+npm install
+npm run dev
+```
+
+Acesse **http://localhost:5173**. O Vite repassa as chamadas `/api` para o Django em
+`localhost:8000` (proxy), então o backend precisa estar rodando.
+
+Testes, verificação de tipos e build de produção:
+
+```bash
+npm test
+npm run typecheck
+npm run build
+```
+
+### Como o frontend se autentica
+
+- O login usa `/api/v1/auth/session/login/`: o **access token** (15 min) volta no corpo e fica
+  **só em memória**; o **refresh token** vai num cookie `HttpOnly` + `SameSite=Strict`, que o
+  JavaScript não consegue ler.
+- Ao recarregar a página, o app chama `/auth/session/refresh/` e recupera a sessão pelo cookie.
+- Nenhum token é guardado em `localStorage`. O perfil do usuário vem sempre de `/auth/me/` e
+  serve só para decidir o que mostrar; quem autoriza cada ação é o backend.
 
 ### Acessando o Django Admin
 
