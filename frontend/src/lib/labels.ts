@@ -36,15 +36,21 @@ export const STATUS_ORDER: TicketStatus[] = [
   "CANCELLED",
 ];
 
-/** Texto do botão para cada transição de status. */
-export const TRANSITION_LABEL: Record<TicketStatus, string> = {
-  OPEN: "Reabrir",
-  IN_PROGRESS: "Iniciar atendimento",
-  WAITING_REQUESTER: "Aguardar solicitante",
-  RESOLVED: "Marcar como resolvido",
-  CLOSED: "Confirmar solução",
-  CANCELLED: "Cancelar chamado",
-};
+/** Texto do botão de uma transição. O mesmo destino pode ter nomes diferentes conforme a origem. */
+export function transitionLabel(from: TicketStatus, to: TicketStatus): string {
+  if (to === "IN_PROGRESS") {
+    if (from === "RESOLVED") return "Reabrir (não foi resolvido)";
+    if (from === "WAITING_REQUESTER") return "Retomar atendimento";
+    return "Iniciar atendimento";
+  }
+  const labels: Partial<Record<TicketStatus, string>> = {
+    WAITING_REQUESTER: "Aguardar solicitante",
+    RESOLVED: "Marcar como resolvido",
+    CLOSED: "Confirmar solução",
+    CANCELLED: "Cancelar chamado",
+  };
+  return labels[to] ?? STATUS_META[to].label;
+}
 
 export const PRIORITY_META: Record<Priority, { label: string; badge: string; bar: string }> = {
   1: { label: "Baixa", badge: "text-slate-600", bar: "bg-slate-400" },

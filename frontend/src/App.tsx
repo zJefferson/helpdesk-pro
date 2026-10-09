@@ -6,6 +6,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NewTicketPage } from "./pages/NewTicketPage";
 import { TicketListPage } from "./pages/TicketListPage";
+import { TicketDetailPage } from "./pages/ticket-detail/TicketDetailPage";
 
 function NotFoundPage() {
   return (
@@ -30,6 +31,7 @@ export function App() {
           <Route index element={<DashboardPage />} />
           <Route path="tickets" element={<TicketListPage />} />
           <Route path="tickets/new" element={<NewTicketPage />} />
+          <Route path="tickets/:id" element={<TicketDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>
