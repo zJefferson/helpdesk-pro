@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.core.serializers import RejectReadOnlyFieldsMixin
@@ -58,7 +59,20 @@ class ChangePasswordSerializer(serializers.Serializer):
         user = self.context["request"].user
         user.set_password(self.validated_data["new_password"])
         user.save(update_fields=["password"])
+        revoke_refresh_tokens(user)
         return user
+
+
+def revoke_refresh_tokens(user):
+    """
+    Coloca na blacklist todos os refresh tokens já emitidos para o usuário.
+    Usado na troca de senha: se a conta foi invadida, o invasor perde a sessão.
+    (Access tokens já emitidos continuam válidos até expirar — no máximo 15 minutos.)
+    """
+    outstanding = OutstandingToken.objects.filter(user=user).exclude(blacklistedtoken__isnull=False)
+    BlacklistedToken.objects.bulk_create(
+        [BlacklistedToken(token=token) for token in outstanding], ignore_conflicts=True
+    )
 
 
 class LogoutSerializer(serializers.Serializer):

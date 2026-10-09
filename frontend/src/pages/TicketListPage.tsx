@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { errorMessage } from "../api/client";
+import { ApiError, errorMessage } from "../api/client";
 import { categoriesApi, ticketsApi, usersApi, type TicketFilters } from "../api/endpoints";
 import type { Priority, Ticket, TicketStatus } from "../api/types";
 import { useCurrentUser } from "../auth/AuthContext";
@@ -108,6 +108,12 @@ export function TicketListPage() {
     queryFn: () => ticketsApi.list(filters),
     placeholderData: keepPreviousData, // mantém a página anterior visível enquanto carrega
   });
+  // Se a página pedida deixou de existir (ex.: chamados foram encerrados), volta para a 1.
+  const pageGone = tickets.error instanceof ApiError && tickets.error.status === 404 && (filters.page ?? 1) > 1;
+  useEffect(() => {
+    if (pageGone) update({ page: undefined });
+  }, [pageGone]); // `update` lê os parâmetros atuais da URL
+
   const categories = useQuery({ queryKey: ["categories"], queryFn: categoriesApi.list });
   const technicians = useQuery({
     queryKey: ["technicians"],

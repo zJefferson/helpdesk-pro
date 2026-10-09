@@ -5,7 +5,7 @@ import { ticketsApi, usersApi } from "../../api/endpoints";
 import type { Ticket, TicketStatus } from "../../api/types";
 import { useCurrentUser } from "../../auth/AuthContext";
 import { Button, Card, inputClass } from "../../components/ui";
-import { STATUS_META, transitionLabel } from "../../lib/labels";
+import { transitionLabel } from "../../lib/labels";
 import { useTicketMutation } from "./useTicketMutation";
 
 const DESTRUCTIVE: TicketStatus[] = ["CANCELLED"];
@@ -60,7 +60,7 @@ export function TicketActions({ ticket }: { ticket: Ticket }) {
               disabled={changeStatus.isPending}
               onClick={() => onTransition(status)}
             >
-              {confirming === status ? `Confirmar: ${STATUS_META[status].label.toLowerCase()}?` : transitionLabel(ticket.status, status)}
+              {confirming === status ? "Sim, cancelar o chamado" : transitionLabel(ticket.status, status)}
             </Button>
           ))}
           {confirming && (

@@ -130,4 +130,6 @@ veja [docs/AUTENTICACAO.md](docs/AUTENTICACAO.md#cadastrando-usuários-de-teste)
 python manage.py createsuperuser
 ```
 
-Depois acesse http://localhost:8000/admin/.
+Depois acesse http://localhost:8000/admin/. No Django Admin, **usuários e categorias** podem ser
+editados; **chamados, comentários e histórico são somente leitura**, porque só a API aplica as
+regras de negócio e grava o histórico.

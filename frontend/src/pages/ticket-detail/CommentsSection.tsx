@@ -24,7 +24,7 @@ export function CommentsSection({ ticket }: { ticket: Ticket }) {
     onSuccess: () => {
       setBody("");
       setIsInternal(false);
-      void queryClient.invalidateQueries({ queryKey: ["ticket", ticket.id, "comments"] });
+      void queryClient.invalidateQueries({ queryKey: ["ticket", ticket.id] }); // inclui os comentários
       void queryClient.invalidateQueries({ queryKey: ["tickets"] });
       toast.success("Comentário adicionado.");
     },

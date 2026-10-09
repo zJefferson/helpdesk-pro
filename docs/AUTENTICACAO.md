@@ -9,12 +9,19 @@
 
 - **Rotação:** cada uso do `refresh` devolve um `refresh` novo e invalida o antigo.
 - **Logout:** o `refresh` vai para uma *blacklist* no banco e não pode mais ser usado.
-- **Limite de tentativas:** login limitado por IP (`LOGIN_THROTTLE_RATE`, padrão `10/min`).
+- **Troca de senha:** invalida todos os `refresh` emitidos antes dela (encerra sessões de um possível invasor).
+- **Limite de tentativas:** login limitado por IP (`LOGIN_THROTTLE_RATE`, padrão `10/min`). O IP é o da conexão; o cabeçalho `X-Forwarded-For` só é considerado se `NUM_PROXIES` > 0.
 - **Senhas:** sempre com hash (PBKDF2); validadas quanto à força.
+- **Somente JSON:** a API recusa formulários HTML (415), o que impede ataques CSRF.
 
-**Vantagens:** funciona bem com React e Django em origens diferentes, sem configurar cookies/CSRF entre sites; fácil de usar no Swagger, curl e Postman.
+### Dois modos de uso
 
-**Limitações:** um `access` vazado vale até expirar (por isso dura só 15 min); tokens acessíveis por JavaScript são alvo de XSS (mitigação: access em memória no frontend, React escapa HTML; melhoria futura: refresh em cookie `HttpOnly`).
+| Cliente | Endpoints | Onde fica o `refresh` |
+|---|---|---|
+| Navegador (frontend React) | `/auth/session/login/`, `/auth/session/refresh/`, `/auth/session/logout/` | Cookie `HttpOnly` + `SameSite=Strict` (+ `Secure` em produção). O JavaScript não consegue lê-lo. O `access` fica só em memória. |
+| Swagger, curl, Postman, integrações | `/auth/token/`, `/auth/token/refresh/`, `/auth/logout/` | No corpo da resposta; o cliente guarda. |
+
+**Limitações:** um `access` vazado vale até expirar (por isso dura só 15 min), inclusive depois de uma troca de senha; o limite de tentativas é por IP (vários usuários atrás do mesmo IP compartilham o limite).
 
 ## Endpoints
 
@@ -23,6 +30,9 @@
 | POST | `/api/v1/auth/token/` | público | Login → `access` + `refresh` |
 | POST | `/api/v1/auth/token/refresh/` | público | Renova o `access` |
 | POST | `/api/v1/auth/logout/` | logado | Invalida o `refresh` (204) |
+| POST | `/api/v1/auth/session/login/` | público | Login do navegador → `access` no corpo + cookie com o `refresh` |
+| POST | `/api/v1/auth/session/refresh/` | cookie | Novo `access` (e cookie rotacionado) |
+| POST | `/api/v1/auth/session/logout/` | cookie | Invalida o `refresh` do cookie e apaga o cookie (204) |
 | GET/PATCH | `/api/v1/auth/me/` | logado | Dados próprios; só o nome é editável |
 | POST | `/api/v1/auth/me/change-password/` | logado | Troca de senha (exige a atual) |
 | GET/POST | `/api/v1/users/` | admin | Lista/cria usuários |

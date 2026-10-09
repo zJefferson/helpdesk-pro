@@ -15,7 +15,10 @@ export function RequireAuth() {
     );
   }
   if (state.status === "anonymous") {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    // Sessão expirada ou acesso direto: depois do login, volta para onde estava.
+    // Logout voluntário: o próximo login (talvez de outra pessoa) começa no dashboard.
+    const from = state.reason === "logout" ? undefined : { from: location };
+    return <Navigate to="/login" replace state={from} />;
   }
   return <Outlet />;
 }

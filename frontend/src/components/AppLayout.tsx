@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { Headset, LayoutDashboard, ListChecks, LogOut, Menu, Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth, useCurrentUser } from "../auth/AuthContext";
 import { ROLE_LABEL } from "../lib/labels";
 import { Avatar } from "./ui";
@@ -26,7 +26,6 @@ function Brand() {
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const user = useCurrentUser();
   const { logout } = useAuth();
-  const navigate = useNavigate();
   const fullName = `${user.first_name} ${user.last_name}`;
 
   return (
@@ -65,11 +64,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
           <button
             type="button"
-            onClick={async () => {
-              await logout();
-              // Logout voluntário: o próximo login começa no dashboard, não na última página.
-              navigate("/login", { replace: true });
-            }}
+            onClick={() => void logout()}
             className="rounded-md p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
             aria-label="Sair"
             title="Sair"

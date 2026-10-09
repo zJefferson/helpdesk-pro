@@ -21,9 +21,12 @@ import type { User } from "../api/types";
  *   decidir o que MOSTRAR; quem decide o que é PERMITIDO é o backend.
  */
 
+/** Por que não há sessão: decide se o login deve devolver o usuário à página anterior. */
+type AnonymousReason = "initial" | "expired" | "logout";
+
 type AuthState =
   | { status: "loading"; user: null }
-  | { status: "anonymous"; user: null }
+  | { status: "anonymous"; user: null; reason: AnonymousReason }
   | { status: "authenticated"; user: User };
 
 interface AuthContextValue {
@@ -38,11 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: "loading", user: null });
   const queryClient = useQueryClient();
 
-  const endSession = useCallback(() => {
-    setAccessToken(null);
-    queryClient.clear(); // remove dados do usuário anterior do cache
-    setState({ status: "anonymous", user: null });
-  }, [queryClient]);
+  const endSession = useCallback(
+    (reason: AnonymousReason) => {
+      setAccessToken(null);
+      queryClient.clear(); // remove dados do usuário anterior do cache
+      setState({ status: "anonymous", user: null, reason });
+    },
+    [queryClient],
+  );
 
   // Restaura a sessão ao carregar a página (o cookie HttpOnly sobrevive ao F5).
   useEffect(() => {
@@ -50,14 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       const ok = await refreshAccessToken();
       if (!ok) {
-        if (!cancelled) setState({ status: "anonymous", user: null });
+        if (!cancelled) setState({ status: "anonymous", user: null, reason: "initial" });
         return;
       }
       try {
         const user = await authApi.me();
         if (!cancelled) setState({ status: "authenticated", user });
       } catch {
-        if (!cancelled) setState({ status: "anonymous", user: null });
+        if (!cancelled) setState({ status: "anonymous", user: null, reason: "initial" });
       }
     })();
     return () => {
@@ -67,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Se a sessão expirar no meio do uso, o cliente HTTP avisa e voltamos ao login.
   useEffect(() => {
-    setSessionExpiredHandler(endSession);
+    setSessionExpiredHandler(() => endSession("expired"));
     return () => setSessionExpiredHandler(null);
   }, [endSession]);
 
@@ -82,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authApi.logout();
     } finally {
-      endSession();
+      endSession("logout");
     }
   }, [endSession]);
 

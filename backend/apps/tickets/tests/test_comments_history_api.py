@@ -181,8 +181,12 @@ def test_history_records_full_flow_with_actor_and_date(client_for, requester, te
     url = reverse("ticket-detail", args=[created.data["id"]])
     ticket_id = created.data["id"]
     req.patch(url, {"title": "Mouse com defeito"}, format="json")
-    tech.post(reverse("ticket-assign", args=[ticket_id]), {"assignee_id": technician.pk})
-    tech.post(reverse("ticket-change-status", args=[ticket_id]), {"status": "IN_PROGRESS"})
+    tech.post(
+        reverse("ticket-assign", args=[ticket_id]), {"assignee_id": technician.pk}, format="json"
+    )
+    tech.post(
+        reverse("ticket-change-status", args=[ticket_id]), {"status": "IN_PROGRESS"}, format="json"
+    )
 
     response = req.get(reverse("ticket-history", args=[ticket_id]))
 

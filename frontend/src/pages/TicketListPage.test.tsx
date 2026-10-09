@@ -137,3 +137,24 @@ describe("TicketListPage", () => {
     expect(technicianCalls).toBe(0);
   });
 });
+
+describe("TicketListPage — página que deixou de existir", () => {
+  it("volta para a página 1 quando a API responde 404 para a página pedida", async () => {
+    loginAs(fakeUsers.ADMIN);
+    const requested = mockTicketsApi();
+    server.use(
+      http.get("/api/v1/tickets/", ({ request }) => {
+        const url = new URL(request.url);
+        requested.push(url);
+        if (url.searchParams.get("page") === "3") {
+          return HttpResponse.json({ detail: "Página inválida." }, { status: 404 });
+        }
+        return HttpResponse.json({ count: 1, next: null, previous: null, results: [makeTicket(1)] });
+      }),
+    );
+    renderPage(<TicketListPage />, { path: "/tickets", route: "/tickets?page=3" });
+
+    expect(await screen.findByText("1–1 de 1")).toBeInTheDocument();
+    expect(requested.at(-1)!.searchParams.get("page")).toBe("1");
+  });
+});

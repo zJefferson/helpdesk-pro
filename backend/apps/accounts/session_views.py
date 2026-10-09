@@ -64,6 +64,12 @@ class SessionAPIView(APIView):
         # Sem isso, o DRF converte "credenciais inválidas" (401) em 403.
         return 'Bearer realm="api"'
 
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        # Força a leitura do corpo mesmo em endpoints sem dados (refresh/logout): assim um
+        # <form> enviado por outro site é recusado com 415 antes de qualquer efeito.
+        request.data  # noqa: B018
+
 
 class SessionLoginView(SessionAPIView):
     throttle_classes = [ScopedRateThrottle]

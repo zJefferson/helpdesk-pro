@@ -83,7 +83,7 @@ describe("TicketDetailPage", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Cancelar chamado" }));
     expect(calls).toHaveLength(0);
 
-    await userEvent.click(screen.getByRole("button", { name: "Confirmar: cancelado?" }));
+    await userEvent.click(screen.getByRole("button", { name: "Sim, cancelar o chamado" }));
     expect(await screen.findByText("Status atualizado.")).toBeInTheDocument();
     expect(calls).toEqual([{ url: "status", body: { status: "CANCELLED" } }]);
   });

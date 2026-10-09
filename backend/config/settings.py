@@ -106,8 +106,15 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPagination",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.exceptions.exception_handler",
+    # Só JSON. Formulários HTML (x-www-form-urlencoded/multipart) podem ser enviados por
+    # qualquer site sem CORS; recusá-los impede ataques CSRF contra os endpoints de sessão.
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     # Limite de tentativas de login por IP: só aplicado nas views que declaram `throttle_scope`.
     "DEFAULT_THROTTLE_RATES": {"login": env("LOGIN_THROTTLE_RATE", default="10/min")},
+    # Quantos proxies confiáveis (ex.: Nginx, balanceador) ficam na frente do Django.
+    # 0 = usar o IP real da conexão e IGNORAR o cabeçalho X-Forwarded-For, que o cliente
+    # pode falsificar para escapar do limite de tentativas.
+    "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
 }
 
 # JWT: access curto (vai em toda requisição) e refresh mais longo (só renova o access).
@@ -123,6 +130,19 @@ SIMPLE_JWT = {
 # Cookie do refresh token usado pelo frontend (ver apps/accounts/session_views.py).
 REFRESH_COOKIE_NAME = "helpdesk_refresh"
 REFRESH_COOKIE_SECURE = env.bool("REFRESH_COOKIE_SECURE", default=not DEBUG)
+
+# Segurança em produção (DEBUG=False): só HTTPS, cookies seguros e HSTS.
+# Rode `python manage.py check --deploy` para conferir.
+if not DEBUG:
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HSTS: o navegador passa a recusar HTTP para este domínio. Comece com valor baixo
+    # e aumente (ex.: 31536000 = 1 ano) depois de confirmar que o HTTPS está estável.
+    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=3600)
+    # Atrás de um proxy que termina o HTTPS, ele informa o protocolo original neste cabeçalho.
+    if REST_FRAMEWORK["NUM_PROXIES"] > 0:
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Documentação OpenAPI/Swagger (drf-spectacular).
 SPECTACULAR_SETTINGS = {
