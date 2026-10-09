@@ -9,6 +9,7 @@ import { useCurrentUser } from "../auth/AuthContext";
 import {
   Avatar,
   Button,
+  ButtonLink,
   Card,
   EmptyState,
   ErrorState,
@@ -139,9 +140,9 @@ export function TicketListPage() {
         title={user.role === "REQUESTER" ? "Meus chamados" : "Chamados"}
         description={data ? `${data.count} chamado${data.count === 1 ? "" : "s"} encontrado${data.count === 1 ? "" : "s"}` : undefined}
         actions={
-          <Link to="/tickets/new">
-            <Button icon={<Plus className="size-4" />}>Abrir chamado</Button>
-          </Link>
+          <ButtonLink to="/tickets/new" icon={<Plus className="size-4" />}>
+            Abrir chamado
+          </ButtonLink>
         }
       />
 

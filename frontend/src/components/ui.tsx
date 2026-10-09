@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { AlertCircle, Inbox, Loader2 } from "lucide-react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { Link } from "react-router-dom";
 import type { Priority, TicketStatus } from "../api/types";
 import { PRIORITY_META, STATUS_META, initials } from "../lib/labels";
 
@@ -46,6 +47,36 @@ export function Button({
       {loading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : icon}
       {children}
     </button>
+  );
+}
+
+/** Link com aparência de botão (evita <button> dentro de <a>, que é inválido e confunde leitores de tela). */
+export function ButtonLink({
+  to,
+  variant = "primary",
+  icon,
+  className,
+  children,
+}: {
+  to: string;
+  variant?: ButtonVariant;
+  icon?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      className={clsx(
+        "inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
+        "focus-visible:outline-2 focus-visible:outline-offset-2",
+        BUTTON_STYLES[variant],
+        className,
+      )}
+    >
+      {icon}
+      {children}
+    </Link>
   );
 }
 

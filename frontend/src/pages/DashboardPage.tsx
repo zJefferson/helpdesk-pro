@@ -7,7 +7,7 @@ import { errorMessage } from "../api/client";
 import { dashboardApi } from "../api/endpoints";
 import type { DashboardSummary } from "../api/types";
 import { useCurrentUser } from "../auth/AuthContext";
-import { Button, Card, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { ButtonLink, Card, ErrorState, LoadingState, PageHeader } from "../components/ui";
 import { PRIORITY_META, STATUS_META } from "../lib/labels";
 
 function formatHours(hours: number | null): string {
@@ -195,9 +195,9 @@ export function DashboardPage() {
             : "Visão geral do atendimento."
         }
         actions={
-          <Link to="/tickets/new">
-            <Button icon={<Plus className="size-4" />}>Abrir chamado</Button>
-          </Link>
+          <ButtonLink to="/tickets/new" icon={<Plus className="size-4" />}>
+            Abrir chamado
+          </ButtonLink>
         }
       />
       {query.isPending ? (
