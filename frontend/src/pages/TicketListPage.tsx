@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -17,6 +18,7 @@ import {
   PageHeader,
   PriorityBadge,
   StatusBadge,
+  inputBaseClass,
   inputClass,
 } from "../components/ui";
 import { PRIORITIES, PRIORITY_META, STATUS_META, STATUS_ORDER, formatRelative } from "../lib/labels";
@@ -154,109 +156,111 @@ export function TicketListPage() {
 
       <Card>
         {/* Barra de filtros */}
-        <div className="grid grid-cols-1 gap-3 border-b border-slate-200 p-4 sm:grid-cols-2 lg:grid-cols-6">
-          <div className="relative sm:col-span-2">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
-            <input
-              type="search"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Buscar por título, descrição ou nº"
-              aria-label="Buscar chamados"
-              className={`${inputClass} pl-9`}
-            />
-          </div>
-          <select
-            aria-label="Filtrar por status"
-            className={inputClass}
-            value={statusValue}
-            onChange={(e) => onStatusChange(e.target.value)}
-          >
-            <option value="all">Todos os status</option>
-            <option value="active">Ativos</option>
-            {statusValue === "custom" && <option value="custom">Seleção personalizada</option>}
-            {STATUS_ORDER.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_META[s].label}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Filtrar por prioridade"
-            className={inputClass}
-            value={filters.priority?.length === 1 ? String(filters.priority[0]) : ""}
-            onChange={(e) => update({ priority: e.target.value ? [e.target.value] : undefined })}
-          >
-            <option value="">Todas as prioridades</option>
-            {[...PRIORITIES].reverse().map((p) => (
-              <option key={p} value={p}>
-                {PRIORITY_META[p].label}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Filtrar por categoria"
-            className={inputClass}
-            value={filters.category ? String(filters.category) : ""}
-            onChange={(e) => update({ category: e.target.value || undefined })}
-          >
-            <option value="">Todas as categorias</option>
-            {categories.data?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          {isStaff ? (
-            <select
-              aria-label="Filtrar por responsável"
-              className={inputClass}
-              value={assigneeValue}
-              onChange={(e) => onAssigneeChange(e.target.value)}
-            >
-              <option value="">Todos os responsáveis</option>
-              <option value="none">Sem responsável</option>
-              <option value={user.id}>Atribuídos a mim</option>
-              {technicians.data
-                ?.filter((t) => t.id !== user.id)
-                .map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.full_name}
+        <div className="space-y-3 border-b border-slate-200 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative lg:flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
+              <input
+                type="search"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Buscar por título, descrição ou nº"
+                aria-label="Buscar chamados"
+                className={`${inputClass} pl-9`}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="ordering" className="whitespace-nowrap text-sm text-slate-500">
+                Ordenar por
+              </label>
+              <select
+                id="ordering"
+                className={inputBaseClass}
+                value={filters.ordering}
+                onChange={(e) => update({ ordering: e.target.value })}
+              >
+                {ORDERING_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
-            </select>
-          ) : (
-            <div className="hidden lg:block" />
-          )}
-          <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-6">
-            <label htmlFor="ordering" className="text-sm text-slate-500">
-              Ordenar por
-            </label>
+              </select>
+              {hasFilters && (
+                <Button
+                  variant="ghost"
+                  className="ml-auto"
+                  icon={<X className="size-4" />}
+                  onClick={() => {
+                    setSearchText("");
+                    setParams(new URLSearchParams(), { replace: true });
+                  }}
+                >
+                  Limpar filtros
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className={clsx("grid grid-cols-1 gap-3 sm:grid-cols-2", isStaff ? "xl:grid-cols-4" : "xl:grid-cols-3")}>
             <select
-              id="ordering"
-              className={`${inputClass} w-auto`}
-              value={filters.ordering}
-              onChange={(e) => update({ ordering: e.target.value })}
+              aria-label="Filtrar por status"
+              className={inputClass}
+              value={statusValue}
+              onChange={(e) => onStatusChange(e.target.value)}
             >
-              {ORDERING_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              <option value="all">Todos os status</option>
+              <option value="active">Ativos</option>
+              {statusValue === "custom" && <option value="custom">Seleção personalizada</option>}
+              {STATUS_ORDER.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_META[s].label}
                 </option>
               ))}
             </select>
-            {hasFilters && (
-              <Button
-                variant="ghost"
-                className="ml-auto"
-                icon={<X className="size-4" />}
-                onClick={() => {
-                  setSearchText("");
-                  setParams(new URLSearchParams(), { replace: true });
-                }}
+            <select
+              aria-label="Filtrar por prioridade"
+              className={inputClass}
+              value={filters.priority?.length === 1 ? String(filters.priority[0]) : ""}
+              onChange={(e) => update({ priority: e.target.value ? [e.target.value] : undefined })}
+            >
+              <option value="">Todas as prioridades</option>
+              {[...PRIORITIES].reverse().map((p) => (
+                <option key={p} value={p}>
+                  {PRIORITY_META[p].label}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Filtrar por categoria"
+              className={inputClass}
+              value={filters.category ? String(filters.category) : ""}
+              onChange={(e) => update({ category: e.target.value || undefined })}
+            >
+              <option value="">Todas as categorias</option>
+              {categories.data?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {isStaff ? (
+              <select
+                aria-label="Filtrar por responsável"
+                className={inputClass}
+                value={assigneeValue}
+                onChange={(e) => onAssigneeChange(e.target.value)}
               >
-                Limpar filtros
-              </Button>
-            )}
+                <option value="">Todos os responsáveis</option>
+                <option value="none">Sem responsável</option>
+                <option value={user.id}>Atribuídos a mim</option>
+                {technicians.data
+                  ?.filter((t) => t.id !== user.id)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.full_name}
+                    </option>
+                  ))}
+              </select>
+            ) : null}
           </div>
         </div>
 
@@ -276,8 +280,9 @@ export function TicketListPage() {
           />
         ) : (
           <div className={tickets.isFetching ? "opacity-60 transition-opacity" : undefined}>
-            {/* Desktop: tabela */}
-            <table className="hidden w-full text-left md:table">
+            {/* Desktop: tabela (rola dentro do cartão se a tela for estreita) */}
+            <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[56rem] text-left">
               <thead className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <tr>
                   <th scope="col" className="px-4 py-3">Chamado</th>
@@ -320,6 +325,7 @@ export function TicketListPage() {
                 ))}
               </tbody>
             </table>
+            </div>
 
             {/* Mobile: cartões */}
             <ul className="divide-y divide-slate-100 md:hidden">

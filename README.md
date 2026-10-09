@@ -1,135 +1,199 @@
 # HelpDesk Pro
 
-Sistema de gestão de chamados de suporte técnico de TI, desenvolvido como projeto de portfólio full stack.
+Sistema de gestão de chamados de suporte técnico de TI. Projeto de portfólio full stack com
+**Django REST Framework**, **React + TypeScript** e **PostgreSQL**, com foco em regras de negócio,
+permissões por perfil e segurança.
 
-> 🚧 **Em desenvolvimento.** Backend e frontend do MVP implementados; CI e deploy em andamento. Etapas em [docs/PLANEJAMENTO.md](docs/PLANEJAMENTO.md).
+![Dashboard do HelpDesk Pro](docs/screenshots/dashboard.png)
 
-## Funcionalidades (MVP)
+> 🚧 **Status:** backend e frontend do MVP concluídos e auditados. Próximos passos: CI,
+> imagem de produção e deploy ([checklist](docs/AUDITORIA.md#4-checklist-de-qualidade-para-a-primeira-versão-publicável-v10)).
 
-- Autenticação com JWT e três perfis: **administrador**, **técnico** e **solicitante**
-- Abertura, consulta, edição e acompanhamento de chamados
-- Categorias, prioridades e fluxo de status
-- Atribuição de chamados a técnicos
-- Comentários (com notas internas) e histórico de alterações
-- Dashboard com indicadores
-- Busca, filtros, ordenação e paginação
-- API REST documentada com OpenAPI/Swagger
-- Testes automatizados de regras de negócio e permissões
+## Funcionalidades
+
+- **Três perfis** com permissões diferentes: solicitante, técnico e administrador
+- **Chamados** com categoria, prioridade e um fluxo de status validado no backend
+  (Aberto → Em atendimento → Aguardando solicitante → Resolvido → Fechado / Cancelado)
+- **Atribuição:** técnicos assumem chamados da fila; administradores distribuem
+- **Comentários** com **notas internas** que o solicitante não vê
+- **Histórico** imutável de alterações: o quê, de/para, quem e quando
+- **Dashboard** com indicadores calculados no banco, conforme o que cada perfil pode ver
+- **Busca, filtros, ordenação e paginação**, com o estado guardado na URL
+- **Interface responsiva** para desktop e celular
+- **API REST documentada** com OpenAPI/Swagger
+
+## Telas
+
+**Lista de chamados:** busca, filtros, ordenação e paginação.
+
+![Lista de chamados](docs/screenshots/chamados.png)
+
+**Detalhe do chamado (visão do técnico):** as ações disponíveis vêm do backend. Notas internas
+ficam destacadas e não aparecem para o solicitante.
+
+![Detalhe de um chamado](docs/screenshots/detalhe-chamado.png)
+
+<table>
+  <tr>
+    <td width="280"><img src="docs/screenshots/mobile-detalhe.png" alt="Detalhe do chamado no celular" width="260"></td>
+    <td>
+      <strong>No celular</strong><br><br>
+      A barra lateral vira um menu, a tabela vira uma lista de cartões e os formulários se
+      ajustam à largura da tela.<br><br>
+      <em>Prints gerados com dados de demonstração.</em>
+    </td>
+  </tr>
+</table>
 
 ## Tecnologias
 
 | Camada | Tecnologias |
 |---|---|
-| Backend | Python, Django, Django REST Framework, SimpleJWT, drf-spectacular |
-| Banco de dados | PostgreSQL |
-| Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query |
+| Backend | Python 3.14, Django 5.2, Django REST Framework, SimpleJWT, django-filter, drf-spectacular |
+| Banco de dados | PostgreSQL 16 |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS 4, TanStack Query, React Hook Form + Zod |
 | Testes | pytest, pytest-django, Vitest, React Testing Library, MSW |
-| Ambiente | Docker, Docker Compose, GitHub Actions |
+| Ambiente | Docker Compose, Ruff |
 
-## Documentação
+## Arquitetura
 
-- [Planejamento completo](docs/PLANEJAMENTO.md): requisitos, regras de negócio, modelo de dados, arquitetura, endpoints e plano de implementação.
-- [Autenticação e permissões](docs/AUTENTICACAO.md): estratégia JWT, matriz de permissões, como criar o primeiro admin e usuários de teste, exemplos de requisições.
-- Swagger (com o servidor rodando): http://localhost:8000/api/docs/
+```mermaid
+flowchart LR
+    B[React + TypeScript] -- "JSON + JWT" --> API[Django REST Framework<br/>/api/v1]
+    API --> S[services.py<br/>regras de negócio + histórico]
+    API --> Q[selectors.py<br/>visibilidade e consultas]
+    S --> DB[(PostgreSQL)]
+    Q --> DB
+```
+
+- **Views** ficam enxutas: autenticam, aplicam a permissão geral e delegam o trabalho.
+- **Serializers** validam o formato dos dados e **recusam (400)** campos que o cliente não pode
+  alterar, como perfil, status e solicitante.
+- **Services** aplicam as regras (transições de status, quem pode editar cada campo) e gravam o
+  histórico **na mesma transação** da alteração.
+- **Selectors** concentram a regra de visibilidade: o solicitante só enxerga os próprios chamados e
+  recebe **404** para os demais.
+- O frontend recebe de cada chamado um campo `permissions`, calculado pelas mesmas funções do
+  backend. Assim o React mostra só os botões certos sem duplicar regras, e o backend continua
+  validando tudo.
+
+## Segurança
+
+- Senhas com hash (PBKDF2) e validação de força
+- **Access token** de 15 minutos guardado só em memória. **Refresh token** em cookie `HttpOnly` +
+  `SameSite=Strict`, sem uso de `localStorage`
+- Rotação e *blacklist* de tokens. A troca de senha encerra as outras sessões
+- Limite de tentativas de login, sem confiar em cabeçalhos que o cliente pode falsificar
+- API aceita somente JSON (proteção contra CSRF)
+- HTTPS, cookies seguros e HSTS ativados em produção (`DEBUG=False`)
+- Testes de tentativas de ataque: tokens adulterados ou expirados, `alg: none`, acesso a chamados
+  alheios, autopromoção a administrador, força bruta
+
+Os detalhes estão em [docs/AUTENTICACAO.md](docs/AUTENTICACAO.md) e na
+[auditoria técnica](docs/AUDITORIA.md).
+
+## Qualidade
+
+| | Backend | Frontend |
+|---|---|---|
+| Testes | **276** (pytest) | **35** (Vitest + Testing Library) |
+| Cobertura | 98% | — |
+| Verificação estática | Ruff (lint + formatação) | TypeScript `strict` |
+
+Os testes rodam contra o PostgreSQL real. Eles cobrem a tabela completa de transições de status,
+as permissões dos três perfis e a **contagem de consultas ao banco** (para evitar o problema N+1).
 
 ## Como rodar
 
-Primeiro, copie o arquivo de variáveis de ambiente e ajuste se necessário:
+Copie o arquivo de variáveis de ambiente e ajuste se necessário:
 
 ```bash
 cp .env.example .env
 ```
 
-### Opção 1 — Docker
-
-Requer [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+### Opção 1: Docker
 
 ```bash
 docker compose up --build
 ```
 
 Sobe o PostgreSQL, o backend (http://localhost:8000) e o frontend (http://localhost:5173).
-Rodar os testes dentro dos containers:
+A configuração foi validada com `docker compose config`, mas **ainda não foi executada de verdade**.
+Até lá, a opção 2 é a forma testada de rodar o projeto.
 
-```bash
-docker compose exec backend pytest
-```
+### Opção 2: sem Docker (dois terminais)
 
-```bash
-docker compose exec frontend npm test
-```
-
-### Opção 2 — Sem Docker
-
-São dois terminais: um para o backend e outro para o frontend.
-
-#### Backend (terminal 1)
-
-Requer Python 3.14 e PostgreSQL 16 instalados, com um usuário e banco `helpdesk`
-(senha `helpdesk`, com permissão `CREATEDB` para os testes):
+Requer **Python 3.14**, **PostgreSQL 16** e **Node.js 24**. Crie o usuário e o banco no PostgreSQL:
 
 ```sql
 CREATE ROLE helpdesk WITH LOGIN PASSWORD 'helpdesk' CREATEDB;
 CREATE DATABASE helpdesk OWNER helpdesk;
 ```
 
-Depois, dentro de `backend/`:
+**Backend** (terminal 1, dentro de `backend/`):
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate        # Linux/macOS: source .venv/bin/activate
-pip install -r requirements-dev.txt
-python manage.py migrate
-python manage.py runserver
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.venv\Scripts\python.exe manage.py migrate
+.venv\Scripts\python.exe manage.py createsuperuser
+.venv\Scripts\python.exe manage.py runserver
 ```
 
-Testes e lint:
-
-```bash
-pytest --cov
-ruff check .
-```
-
-Acesse http://localhost:8000/api/health/ — a resposta deve ser `{"status": "ok", "database": "ok"}`.
-
-#### Frontend (terminal 2)
-
-Requer Node.js 24. Dentro de `frontend/`:
+**Frontend** (terminal 2, dentro de `frontend/`):
 
 ```bash
 npm install
 npm run dev
 ```
 
-Acesse **http://localhost:5173**. O Vite repassa as chamadas `/api` para o Django em
-`localhost:8000` (proxy), então o backend precisa estar rodando.
+Acesse **http://localhost:5173** e entre com o usuário criado no `createsuperuser`. O Vite repassa
+as chamadas `/api` para o Django (proxy), então os dois precisam estar rodando.
 
-Testes, verificação de tipos e build de produção:
+> **Windows/PowerShell:** se aparecer "a execução de scripts foi desabilitada", use `npm.cmd` no
+> lugar de `npm` (ex.: `npm.cmd run dev`). No Linux/macOS, troque `.venv\Scripts\python.exe` por
+> `.venv/bin/python`.
+
+### Testes
+
+Backend (dentro de `backend/`):
+
+```bash
+.venv\Scripts\python.exe -m pytest --cov
+```
+
+Frontend (dentro de `frontend/`):
 
 ```bash
 npm test
-npm run typecheck
-npm run build
 ```
 
-### Como o frontend se autentica
+### Usuários e Django Admin
 
-- O login usa `/api/v1/auth/session/login/`: o **access token** (15 min) volta no corpo e fica
-  **só em memória**; o **refresh token** vai num cookie `HttpOnly` + `SameSite=Strict`, que o
-  JavaScript não consegue ler.
-- Ao recarregar a página, o app chama `/auth/session/refresh/` e recupera a sessão pelo cookie.
-- Nenhum token é guardado em `localStorage`. O perfil do usuário vem sempre de `/auth/me/` e
-  serve só para decidir o que mostrar; quem autoriza cada ação é o backend.
-
-### Acessando o Django Admin
-
-Crie seu próprio administrador (o login é pelo e-mail). Para cadastrar usuários de teste,
-veja [docs/AUTENTICACAO.md](docs/AUTENTICACAO.md#cadastrando-usuários-de-teste).
-
-```bash
-python manage.py createsuperuser
-```
-
-Depois acesse http://localhost:8000/admin/. No Django Admin, **usuários e categorias** podem ser
-editados; **chamados, comentários e histórico são somente leitura**, porque só a API aplica as
+Novos usuários e categorias podem ser cadastrados pelo Django Admin (http://localhost:8000/admin/)
+ou pela API. Veja [como cadastrar usuários de teste](docs/AUTENTICACAO.md#cadastrando-usuários-de-teste).
+No admin, **chamados, comentários e histórico são somente leitura**, porque só a API aplica as
 regras de negócio e grava o histórico.
+
+## Documentação
+
+| Documento | Conteúdo |
+|---|---|
+| [Planejamento](docs/PLANEJAMENTO.md) | Requisitos, regras de negócio, modelo de dados (diagrama ER), endpoints e plano de implementação |
+| [Autenticação e permissões](docs/AUTENTICACAO.md) | Estratégia JWT, matriz de permissões por perfil, exemplos de requisições |
+| [Auditoria técnica](docs/AUDITORIA.md) | Problemas encontrados, correções e checklist para publicação |
+| Swagger | http://localhost:8000/api/docs/ (com o backend rodando) |
+
+## Estrutura
+
+```text
+helpdesk-pro/
+├── backend/            # Django + DRF
+│   ├── apps/accounts/  # usuários, perfis, autenticação
+│   ├── apps/tickets/   # chamados, categorias, comentários, histórico, dashboard
+│   └── apps/core/      # permissões, paginação, health check
+├── frontend/           # React + TypeScript + Tailwind
+│   └── src/            # api/, auth/, components/, pages/
+├── docs/               # planejamento, autenticação, auditoria, prints
+└── docker-compose.yml
+```

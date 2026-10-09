@@ -204,8 +204,12 @@ export function EmptyState({
 
 // --- Campos de formulário ----------------------------------------------------
 
-export const inputClass =
-  "block w-full rounded-md border-0 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 focus:outline-none disabled:bg-slate-50 disabled:text-slate-500 aria-[invalid=true]:ring-rose-400";
+/** Aparência dos campos, sem largura (para quando o campo deve ter a largura do conteúdo). */
+export const inputBaseClass =
+  "rounded-md border-0 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 focus:outline-none disabled:bg-slate-50 disabled:text-slate-500 aria-[invalid=true]:ring-rose-400";
+
+/** Campo ocupando toda a largura disponível (padrão dos formulários). */
+export const inputClass = `block w-full ${inputBaseClass}`;
 
 export function Field({
   label,
